@@ -6,6 +6,8 @@ import image from "gulp-image";
 import sass from "gulp-sass";
 import nsass from "node-sass";
 sass.compiler = nsass;
+import autoprefixer from "gulp-autoprefixer";
+import miniCSS from "gulp-csso";
 // 원래 commonjs 모듈을 사용하지만 es6 모듈 시스템을 사용하기 위해서는
 // 파일이름을 gulpfile.babel.js가 필요하고 .babelrc에 preset-env를 설정해준다.
 // @babel/core, @babel/register, @babel/preset-env 필요
@@ -51,6 +53,12 @@ const styles = () =>
   gulp
     .src(routes.scss.src)
     .pipe(sass().on("error", sass.logError))
+    .pipe(
+      autoprefixer({
+        overrideBrowserslist: ["last 2 versions"], // default, 지원하는 브라우저가 커질 수록 느려짐.
+      })
+    )
+    .pipe(miniCSS()) // gulp-csso로 minify(최소화)해줌. 공백을 없애준다.
     .pipe(gulp.dest(routes.scss.dest));
 
 const watch = () => {
