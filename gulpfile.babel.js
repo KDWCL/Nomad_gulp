@@ -10,6 +10,7 @@ import autoprefixer from "gulp-autoprefixer";
 import miniCSS from "gulp-csso";
 import bro from "gulp-bro";
 import babelify from "babelify";
+import ghPages from "gulp-gh-pages";
 /* gulp란? 
 gulp는 반복적으로 수행하게 되는 일인 파일용량 줄이기 위한 압축, 병합 등과 같은 수정작업이 일어나면 반복적으로 해야할 일들을 자동적으로 처리해주는 자동화 빌드 시스템입니다.
 출처: https://woonghub.tistory.com/58 [개발허브]
@@ -54,7 +55,7 @@ const webserver = () =>
 // https://www.npmjs.com/package/gulp-webserver <- 옵션확인
 // gulp 명령어 사용 시 바로 웹을 띄워주는 역할을 수행. gulp-connect도 있음.
 
-const clean = () => del(["build"]);
+const clean = () => del(["build", ".publish"]);
 // build 디렉토리 삭제
 
 const img = () =>
@@ -86,6 +87,9 @@ const js = () =>
     )
     .pipe(gulp.dest(routes.js.dest));
 
+const ghDeploy = () => gulp.src("build/**/*").pipe(ghPages());
+// option으로 remoteURL을 넣어줄 수 있다. 바꾸기 위해선 레포지토리도 바꿔줘야 한다.
+
 const watch = () => {
   gulp.watch(routes.pug.watch, pug);
   gulp.watch(routes.img.src, img);
@@ -105,5 +109,9 @@ const live = gulp.parallel([webserver, watch]);
 // 원래 Starting -> Finished가 되고나서 다음 task가 Starting이 되어야 하는데
 // 두개가 동시에 Starting이 된다.
 
-export const dev = gulp.series([prepare, assets, live]);
+export const build = gulp.series([prepare, assets]);
+// live만 빼고 실행
+export const dev = gulp.series([build, live]);
 // gulp dev를 하기 위해서는 export를 해줘야 한다.
+export const deploy = gulp.series([build, ghDeploy, clean]);
+// build를 실행시키고 deploy를 한다.
