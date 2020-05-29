@@ -3,6 +3,9 @@ import gpug from "gulp-pug";
 import del from "del";
 import ws from "gulp-webserver";
 import image from "gulp-image";
+import sass from "gulp-sass";
+import nsass from "node-sass";
+sass.compiler = nsass;
 // 원래 commonjs 모듈을 사용하지만 es6 모듈 시스템을 사용하기 위해서는
 // 파일이름을 gulpfile.babel.js가 필요하고 .babelrc에 preset-env를 설정해준다.
 // @babel/core, @babel/register, @babel/preset-env 필요
@@ -17,6 +20,11 @@ const routes = {
   img: {
     src: "src/img/*",
     dest: "build/img",
+  },
+  scss: {
+    watch: "src/scss/**/*.scss",
+    src: "src/scss/styles.scss",
+    dest: "build/scss",
   },
 };
 // 함수 하나하나가 task임. task의 역할은 pug -> html 트랜스파일링, scss-> css 트랜스파일링 등 임.
@@ -35,21 +43,28 @@ const webserver = () =>
 const clean = () => del(["build"]);
 // build 디렉토리 삭제
 
-const watch = () => {
-  gulp.watch(routes.pug.watch, pug);
-  gulp.watch(routes.img.src, img);
-};
-// 계속 watch할 경로를 정해준다. watch: "src/**/*.pug"
-// 두번째 인자는 지정한 경로에 있는 파일이 변경되었을 때 어떤 task를 실행할지이다.
-
 const img = () =>
   gulp.src(routes.img.src).pipe(image()).pipe(gulp.dest(routes.img.dest));
 // 이미지 최적화(용량 크기를 줄여준다.)
 
+const styles = () =>
+  gulp
+    .src(routes.scss.src)
+    .pipe(sass().on("error", sass.logError))
+    .pipe(gulp.dest(routes.scss.dest));
+
+const watch = () => {
+  gulp.watch(routes.pug.watch, pug);
+  gulp.watch(routes.img.src, img);
+  gulp.watch(routes.scss.watch, styles);
+};
+// 계속 watch할 경로를 정해준다. watch: "src/**/*.pug"
+// 두번째 인자는 지정한 경로에 있는 파일이 변경되었을 때 어떤 task를 실행할지이다.
+
 const prepare = gulp.series([clean, img]);
 // series를 사용하면 task를 용도별로 정리할 수 있음.
 
-const assets = gulp.series([pug]);
+const assets = gulp.series([pug], [styles]);
 
 const live = gulp.parallel([webserver, watch]);
 // 두개의 task를 동시에 실행시키고 싶다면 parallel을 사용한다.
