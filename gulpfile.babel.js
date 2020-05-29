@@ -8,6 +8,13 @@ import nsass from "node-sass";
 sass.compiler = nsass;
 import autoprefixer from "gulp-autoprefixer";
 import miniCSS from "gulp-csso";
+import bro from "gulp-bro";
+import babelify from "babelify";
+/* gulp란? 
+gulp는 반복적으로 수행하게 되는 일인 파일용량 줄이기 위한 압축, 병합 등과 같은 수정작업이 일어나면 반복적으로 해야할 일들을 자동적으로 처리해주는 자동화 빌드 시스템입니다.
+출처: https://woonghub.tistory.com/58 [개발허브]
+*/
+
 // 원래 commonjs 모듈을 사용하지만 es6 모듈 시스템을 사용하기 위해서는
 // 파일이름을 gulpfile.babel.js가 필요하고 .babelrc에 preset-env를 설정해준다.
 // @babel/core, @babel/register, @babel/preset-env 필요
@@ -27,6 +34,11 @@ const routes = {
     watch: "src/scss/**/*.scss",
     src: "src/scss/styles.scss",
     dest: "build/scss",
+  },
+  js: {
+    watch: "src/js/**/*.js",
+    src: "src/js/main.js",
+    dest: "build/js",
   },
 };
 // 함수 하나하나가 task임. task의 역할은 pug -> html 트랜스파일링, scss-> css 트랜스파일링 등 임.
@@ -61,10 +73,24 @@ const styles = () =>
     .pipe(miniCSS()) // gulp-csso로 minify(최소화)해줌. 공백을 없애준다.
     .pipe(gulp.dest(routes.scss.dest));
 
+const js = () =>
+  gulp
+    .src(routes.js.src)
+    .pipe(
+      bro({
+        transform: [
+          babelify.configure({ presets: ["@babel/preset-env"] }),
+          ["uglifyify", { global: true }], // uglifyify는 띄워쓰기 같은 것들을 좀 더 압축해준다.
+        ],
+      })
+    )
+    .pipe(gulp.dest(routes.js.dest));
+
 const watch = () => {
   gulp.watch(routes.pug.watch, pug);
   gulp.watch(routes.img.src, img);
   gulp.watch(routes.scss.watch, styles);
+  gulp.watch(routes.js.watch, js);
 };
 // 계속 watch할 경로를 정해준다. watch: "src/**/*.pug"
 // 두번째 인자는 지정한 경로에 있는 파일이 변경되었을 때 어떤 task를 실행할지이다.
@@ -72,7 +98,7 @@ const watch = () => {
 const prepare = gulp.series([clean, img]);
 // series를 사용하면 task를 용도별로 정리할 수 있음.
 
-const assets = gulp.series([pug], [styles]);
+const assets = gulp.series([pug, styles, js]);
 
 const live = gulp.parallel([webserver, watch]);
 // 두개의 task를 동시에 실행시키고 싶다면 parallel을 사용한다.
